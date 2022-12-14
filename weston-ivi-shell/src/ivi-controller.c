@@ -84,6 +84,7 @@ struct ivicontroller {
 
 struct ivi_screenshooter {
     struct wl_resource *screenshot;
+    struct weston_output *output;
 };
 
 struct screen_id_info {

@@ -31,7 +31,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "plugin-registry.h"
 #include "ilm_types.h"
 
 #include "ivi-input-server-protocol.h"
