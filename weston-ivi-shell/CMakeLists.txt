@@ -89,5 +89,5 @@ target_link_libraries(${PROJECT_NAME} ${LIBS})
 
 install (
     TARGETS             ${PROJECT_NAME}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/weston
+    LIBRARY DESTINATION ${WESTON_LIBDIR}/weston
 )
