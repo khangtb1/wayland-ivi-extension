@@ -17,6 +17,26 @@ struct AppWaylandEgl
   EGLContext            eglcontext;
 
   struct wl_list        window_list;
+  struct wl_list        seat_list;
+  struct wl_list        output_list;
+
+  bool                  is_running;
+  int                   signal_fd;
+};
+
+struct AppOutput
+{
+  struct wl_output *wloutput;
+  uint32_t id;
+  struct wl_list link;
+};
+
+struct AppSeat
+{
+  struct wl_seat *wlseat;
+  struct wl_touch *wltouch;
+  uint32_t id;
+  struct wl_list link;
 };
 
 extern struct AppWaylandEgl gAppWaylandEgl;
@@ -26,5 +46,7 @@ void DisconnectFromCompositor();
 
 int InitializeEgl();
 void DeInitializeEgl();
+
+int AppDispatcher();
 
 #endif

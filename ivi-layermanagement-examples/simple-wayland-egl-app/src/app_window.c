@@ -109,3 +109,13 @@ void removeWindow(struct AppWindow *window)
     free(window);
   }
 }
+
+void removeAllWindows()
+{
+  LOG_INFO("removeAllWindows() trigged\n");
+
+  struct AppWindow *appWindowElem, *appWindowElemNext;
+  wl_list_for_each_safe(appWindowElem, appWindowElemNext, &gAppWaylandEgl.window_list, link) {
+    removeWindow(appWindowElem);
+  }
+}

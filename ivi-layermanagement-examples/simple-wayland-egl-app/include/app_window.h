@@ -22,5 +22,6 @@ struct AppWindow
 
 struct AppWindow *createWindow(uint32_t width, uint32_t height, const char *window_title);
 void removeWindow(struct AppWindow *surface);
+void removeAllWindows();
 
 #endif

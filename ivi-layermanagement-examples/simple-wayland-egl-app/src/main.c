@@ -7,12 +7,12 @@ static int RunningApp()
     return -1;
   }
 
-  struct AppWindow *appWindowElem, *appWindowElemNext;
-  wl_list_for_each_safe(appWindowElem, appWindowElemNext, &gAppWaylandEgl.window_list, link) {
-    removeWindow(appWindowElem);
-  }
+  /* Wait terminate signal or compositor quit */
+  int ret = AppDispatcher();
 
-  return 0;
+  /* Remove all windows before exit */
+  removeAllWindows();
+  return ret;
 }
 
 int main(int argc, char **argv)
