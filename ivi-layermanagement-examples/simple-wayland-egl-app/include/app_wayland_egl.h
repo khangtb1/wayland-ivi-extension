@@ -35,6 +35,8 @@ struct AppSeat
 {
   struct wl_seat *wlseat;
   struct wl_touch *wltouch;
+  struct wl_pointer *wlpointer;
+  struct wl_keyboard *wlkeyboard;
   uint32_t id;
   struct wl_list link;
 };

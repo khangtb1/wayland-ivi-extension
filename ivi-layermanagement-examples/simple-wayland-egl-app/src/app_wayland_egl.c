@@ -1,4 +1,5 @@
 #include "app_wayland_egl.h"
+#include "app_events.h"
 #include <sys/signalfd.h>
 #include <signal.h>
 #include <poll.h>
@@ -40,51 +41,6 @@ static int SetupSignalFd()
   return 0;
 }
 
-static void touch_handle_down(void *p_data, struct wl_touch *p_touch, uint32_t serial, uint32_t time, struct wl_surface *p_surface, int32_t id, wl_fixed_t x_w, wl_fixed_t y_w)
-{
-  LOG_INFO("touch_handle_down trigged with id: %d\n", id);
-}
-
-static void touch_handle_up(void *p_data, struct wl_touch *p_touch, uint32_t serial, uint32_t time, int32_t id)
-{
-  LOG_INFO("touch_handle_up trigged with id: %d\n", id);
-}
-
-static void touch_handle_motion(void *p_data, struct wl_touch *p_touch, uint32_t time, int32_t id, wl_fixed_t x_w, wl_fixed_t y_w)
-{
-  LOG_INFO("touch_handle_motion trigged with id: %d\n", id);
-}
-
-static void touch_handle_frame(void *p_data, struct wl_touch *p_touch)
-{
-  LOG_INFO("touch_handle_frame trigged\n");
-}
-
-static void touch_handle_cancel(void *p_data, struct wl_touch *p_touch)
-{
-  LOG_INFO("touch_handle_cancel trigged\n");
-}
-
-static void touch_handle_shape(void *p_data, struct wl_touch *p_touch, int32_t id, wl_fixed_t major, wl_fixed_t minor)
-{
-  LOG_INFO("touch_handle_shape trigged with id: %d\n", id);
-}
-
-static void touch_handle_orientation(void *p_data, struct wl_touch *p_touch, int32_t id, wl_fixed_t orientation)
-{
-  LOG_INFO("touch_handle_orientation trigged with id: %d\n", id);
-}
-
-static const struct wl_touch_listener touch_listener = {
-  touch_handle_down,
-  touch_handle_up,
-  touch_handle_motion,
-  touch_handle_frame,
-  touch_handle_cancel,
-  touch_handle_shape,
-  touch_handle_orientation
-};
-
 static void seat_capabilities(void *p_data, struct wl_seat *p_seat, uint32_t caps)
 {
   LOG_INFO("seat_capabilities trigged with caps: %d\n", caps);
@@ -92,58 +48,45 @@ static void seat_capabilities(void *p_data, struct wl_seat *p_seat, uint32_t cap
   struct AppSeat *lpSeat = (struct AppSeat*)p_data;
 
   if ((caps & WL_SEAT_CAPABILITY_TOUCH) && !lpSeat->wltouch) {
+    LOG_INFO("seat_capabilities do wl_seat_get_touch\n");
     lpSeat->wltouch = wl_seat_get_touch(p_seat);
     wl_touch_add_listener(lpSeat->wltouch, &touch_listener, lpSeat);
   }
   else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && lpSeat->wltouch)
   {
+    LOG_INFO("seat_capabilities do wl_touch_destroy\n");
     wl_touch_destroy(lpSeat->wltouch);
     lpSeat->wltouch = NULL;
+  }
+
+  if ((caps & WL_SEAT_CAPABILITY_POINTER) && !lpSeat->wlpointer) {
+    LOG_INFO("seat_capabilities do wl_seat_get_pointer\n");
+    lpSeat->wlpointer = wl_seat_get_pointer(p_seat);
+    wl_pointer_add_listener(lpSeat->wlpointer, &pointer_listener, lpSeat);
+  }
+  else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && lpSeat->wlpointer)
+  {
+    LOG_INFO("seat_capabilities do wl_pointer_destroy\n");
+    wl_pointer_destroy(lpSeat->wlpointer);
+    lpSeat->wlpointer = NULL;
+  }
+
+  if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !lpSeat->wlkeyboard) {
+    LOG_INFO("seat_capabilities do wl_seat_get_keyboard\n");
+    lpSeat->wlkeyboard = wl_seat_get_keyboard(p_seat);
+    wl_keyboard_add_listener(lpSeat->wlkeyboard, &keyboard_listener, lpSeat);
+  }
+  else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && lpSeat->wlkeyboard)
+  {
+    LOG_INFO("seat_capabilities do wl_keyboard_destroy\n");
+    wl_keyboard_destroy(lpSeat->wlkeyboard);
+    lpSeat->wlkeyboard = NULL;
   }
 }
 
 static const struct wl_seat_listener seat_listener = {
   seat_capabilities,
   NULL /* name: since version 2 */
-};
-
-static void output_listener_geometry(void *data, struct wl_output *output, int32_t x, int32_t y, int32_t physical_width, int32_t physical_height, int32_t subpixel, const char *make, const char *model, int32_t transform)
-{
-  LOG_INFO("output_listener_geometry trigged\n");
-}
-
-static void output_listener_mode(void *data, struct wl_output *output, uint32_t flags, int32_t width, int32_t height, int32_t refresh)
-{
-  LOG_INFO("output_listener_mode trigged\n");
-}
-
-static void output_listener_done(void *data, struct wl_output *output)
-{
-  LOG_INFO("output_listener_done trigged\n");
-}
-
-static void output_listener_scale(void *data, struct wl_output *output, int32_t factor)
-{
-  LOG_INFO("output_listener_scale trigged\n");
-}
-
-static void output_listener_name(void *data, struct wl_output *wl_output, const char *name)
-{
-  LOG_INFO("output_listener_name trigged: %s\n", name);
-}
-
-static void output_listener_description(void *data, struct wl_output *wl_output, const char *description)
-{
-  LOG_INFO("output_listener_description trigged: %s\n", description);
-}
-
-static struct wl_output_listener output_listener = {
-  output_listener_geometry,
-  output_listener_mode,
-  output_listener_done,
-  output_listener_scale,
-  output_listener_name,
-  output_listener_description
 };
 
 static void registry_handle_global(void *p_data, struct wl_registry *p_registry,
@@ -197,8 +140,20 @@ static void registry_handle_remove(void *p_data, struct wl_registry *p_registry,
       LOG_INFO("wl_seat is removed id: %d\n", id);
       wl_list_remove(&lpSeat->link);
 
-      if (lpSeat->wltouch)
+      if (lpSeat->wltouch) {
+        LOG_INFO("wl_touch_destroy\n");
         wl_touch_destroy(lpSeat->wltouch);
+      }
+
+      if (lpSeat->wlpointer) {
+        LOG_INFO("wl_pointer_destroy\n");
+        wl_pointer_destroy(lpSeat->wlpointer);
+      }
+
+      if (lpSeat->wlkeyboard) {
+         LOG_INFO("wl_keyboard_destroy\n");
+         wl_keyboard_destroy(lpSeat->wlkeyboard);
+      }
 
       if (lpSeat->wlseat)
         wl_seat_destroy(lpSeat->wlseat);
@@ -239,8 +194,20 @@ void DisconnectFromCompositor()
     LOG_INFO("wl_seat is removed id: %d\n", lpSeat->id);
     wl_list_remove(&lpSeat->link);
 
-    if (lpSeat->wltouch)
-      wl_touch_destroy(lpSeat->wltouch);
+      if (lpSeat->wltouch) {
+        LOG_INFO("DisconnectFromCompositor wl_touch_destroy\n");
+        wl_touch_destroy(lpSeat->wltouch);
+      }
+
+      if (lpSeat->wlpointer) {
+        LOG_INFO("DisconnectFromCompositor wl_pointer_destroy\n");
+        wl_pointer_destroy(lpSeat->wlpointer);
+      }
+
+      if (lpSeat->wlkeyboard) {
+         LOG_INFO("DisconnectFromCompositor wl_keyboard_destroy\n");
+         wl_keyboard_destroy(lpSeat->wlkeyboard);
+      }
 
     if (lpSeat->wlseat)
       wl_seat_destroy(lpSeat->wlseat);

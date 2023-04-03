@@ -52,6 +52,7 @@ add_executable(${PROJECT_NAME}
     src/main.c
     src/app_wayland_egl.c
     src/app_window.c
+    src/app_events.c
 )
 
 SET(GCC_SANITIZER_COMPILE_FLAGS "-fsanitize=address -fsanitize=undefined -fno-sanitize-recover -fstack-protector-all")
