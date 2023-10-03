@@ -28,7 +28,6 @@ pkg_check_modules(WESTON weston>=5.0.0 REQUIRED)
 pkg_check_modules(PIXMAN pixman-1 REQUIRED)
 
 pkg_check_modules(LIBWESTON libweston-${LIBWESTON_VER} REQUIRED)
-pkg_check_modules(LIBWESTON_DESKTOP libweston-desktop-${LIBWESTON_VER} REQUIRED)
 
 find_program(WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner)
 
@@ -65,7 +64,6 @@ include_directories(
 link_directories(
     ${WAYLAND_SERVER_LIBRARY_DIRS}
     ${PIXMAN_LIBRARY_DIRS}
-    ${LIBWESTON_DESKTOP_LIBRARY_DIRS}
 )
 
 
@@ -80,7 +78,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 set(LIBS
     ${LIBS}
     ${WAYLAND_SERVER_LIBRARIES}
-    ${LIBWESTON_DESKTOP_LIBRARIES}
 )
 
 set(CMAKE_C_LDFLAGS "-module -avoid-version")
