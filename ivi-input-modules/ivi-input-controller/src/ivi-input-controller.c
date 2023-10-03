@@ -539,13 +539,16 @@ input_ctrl_ptr_set_west_focus(struct seat_ctx *ctx_seat,
     struct input_context *ctx = ctx_seat->input_ctx;
     struct seat_focus *st_focus;
     wl_fixed_t sx, sy;
+    struct weston_coord_surface tmp_s;
 
     if (NULL == view) {
         view = weston_compositor_pick_view(pointer->seat->compositor,
                 pointer->pos);
     } else {
-        weston_view_from_global_fixed(view, pointer->x,
-                        pointer->y, &sx, &sy);
+        /*@discussion about the warning*/
+        tmp_s = weston_coord_global_to_surface(view, pointer->pos);
+        sx = wl_fixed_from_double(tmp_s.c.x);
+        sy= wl_fixed_from_double(tmp_s.c.y);
     }
 
     if (pointer->focus != view) {
