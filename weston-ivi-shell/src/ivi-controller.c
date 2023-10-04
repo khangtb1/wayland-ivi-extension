@@ -1724,12 +1724,21 @@ surface_event_remove(struct wl_listener *listener, void *data)
     struct notification *not, *next;
 
     ivisurf = get_surface(&shell->list_surface, layout_surface);
+    id_surface = shell->interface->get_id_of_surface(layout_surface);
+
     if (ivisurf == NULL) {
+        if (shell->bkgnd_surface_id == (int32_t)id_surface) {
+            ivisurf = shell->bkgnd_surface;
+            goto surface_common_remove;
+        }
+
         weston_log("id_surface is not created yet\n");
         return;
     }
 
     wl_signal_emit(&shell->ivisurface_removed_signal, ivisurf);
+
+surface_common_remove:
     wl_list_for_each_safe(not, next, &ivisurf->notification_list, layout_link)
     {
         wl_list_remove(&not->link);
@@ -1737,18 +1746,21 @@ surface_event_remove(struct wl_listener *listener, void *data)
         free(not);
     }
 
+    if (shell->bkgnd_surface_id == (int32_t)id_surface) {
+        if (shell->bkgnd_view) {
+            weston_layer_entry_remove(&shell->bkgnd_view->layer_link);
+            weston_view_destroy(shell->bkgnd_view);
+            shell->bkgnd_view = NULL;
+        }
+        wl_list_remove(&ivisurf->committed.link);
+        free(ivisurf);
+        return;
+    }
+
     wl_list_remove(&ivisurf->link);
     wl_list_remove(&ivisurf->property_changed.link);
     wl_list_remove(&ivisurf->committed.link);
     free(ivisurf);
-
-    id_surface = shell->interface->get_id_of_surface(layout_surface);
-
-    if ((shell->bkgnd_surface_id == (int32_t)id_surface) &&
-         shell->bkgnd_view) {
-        weston_layer_entry_remove(&shell->bkgnd_view->layer_link);
-        weston_view_destroy(shell->bkgnd_view);
-    }
 
     wl_list_for_each(controller, &shell->list_controller, link) {
         if (controller->resource)
